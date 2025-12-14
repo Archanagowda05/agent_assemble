@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevCourt Production | Live Simulation</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:wght@400;600;700&family=JetBrains+Mono:wght@400;600&display=swap');
+
+        :root {
+            --gold: #d4af37;
+            --gold-dim: rgba(212, 175, 55, 0.1);
+            --bg-dark: #0a0a0a;
+            --bg-panel: #111;
+            --text-main: #f8f6f1;
+            --green: #2d6a4f;
+            --red: #dc143c;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            font-family: 'Crimson Pro', serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Utility */
+        .font-mono { font-family: 'JetBrains Mono', monospace; }
+        .flex { display: flex; }
+        .flex-col { flex-direction: column; }
+        .items-center { align-items: center; }
+        .justify-between { justify-content: space-between; }
+        .gap-2 { gap: 0.5rem; }
+        .gap-4 { gap: 1rem; }
+        .p-4 { padding: 1rem; }
+        .p-6 { padding: 1.5rem; }
+        .border { border: 1px solid #333; }
+        .rounded { border-radius: 8px; }
+        .hidden { display: none; }
+
+        /* Header */
+        header {
+            background: rgba(0,0,0,0.8);
+            border-bottom: 1px solid var(--gold);
+            padding: 1rem 2rem;
+            backdrop-filter: blur(10px);
+        }
+        .brand-icon {
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--gold);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            box-shadow: 0 0 15px var(--gold-dim);
+        }
+
+        /* Main Layout */
+        main {
+            flex: 1;
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 2rem;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Status Bar */
+        .status-bar {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            overflow-x: auto;
+            padding-bottom: 0.5rem;
+        }
+        .status-item {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            padding: 0.5rem 1rem;
+            border-radius: 6px;
+            text-align: center;
+            min-width: 80px;
+        }
+        .status-item.active { border-color: var(--gold); }
+        .status-dot { height: 8px; width: 8px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        .dot-green { background: #0f0; box-shadow: 0 0 5px #0f0; }
+        .dot-yellow { background: #fa0; }
+
+        /* Code Editor */
+        .editor-container {
+            background: #111;
+            border: 1px solid var(--gold);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            height: 60vh;
+        }
+        .editor-header {
+            background: rgba(212, 175, 55, 0.05);
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #333;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        textarea {
+            flex: 1;
+            background: #0d1117;
+            color: #c9d1d9;
+            border: none;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+            resize: none;
+        }
+        textarea:focus { outline: none; }
+
+        /* Buttons */
+        .btn {
+            background: transparent;
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .btn:hover { background: var(--gold-dim); }
+        .btn-primary {
+            background: var(--gold);
+            color: #000;
+            width: 100%;
+            padding: 1rem;
+            font-size: 1.1rem;
+            border: none;
+        }
+        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px var(--gold-dim); }
+        .btn-primary:disabled { background: #444; color: #888; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Logs */
+        .logs-panel {
+            background: #000;
+            border: 1px solid #333;
+            border-radius: 8px;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        .logs-header {
+            padding: 0.5rem 1rem;
+            border-bottom: 1px solid #333;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .logs-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        .log-entry { opacity: 0; animation: fadeIn 0.3s forwards; display: flex; gap: 0.5rem; }
+        .log-time { color: #555; }
+        .log-service { font-weight: bold; }
+        .service-kestra { color: #a78bfa; }
+        .service-oumi { color: #60a5fa; }
+        .service-together { color: #fbbf24; }
+        .service-github { color: #9ca3af; }
+        .service-vercel { color: #fff; }
+        .log-msg { color: #ccc; }
+
+        /* Verdict Modal / Overlay */
+        .verdict-overlay {
+            position: absolute;
+            bottom: 2rem;
+            left: 2rem;
+            right: calc(33% + 4rem);
+            background: rgba(10,10,10,0.95);
+            border: 2px solid;
+            border-radius: 8px;
+            padding: 2rem;
+            display: none;
+            animation: slideUp 0.5s ease-out;
+            backdrop-filter: blur(10px);
+        }
+        .verdict-guilty { border-color: var(--red); box-shadow: 0 0 30px rgba(220,20,60,0.2); }
+        .verdict-innocent { border-color: var(--green); box-shadow: 0 0 30px rgba(45,106,79,0.2); }
+
+        /* Progress Bar */
+        .progress-bar {
+            height: 4px;
+            background: #222;
+            width: 100%;
+        }
+        .progress-fill {
+            height: 100%;
+            background: var(--gold);
+            width: 0%;
+            transition: width 0.3s linear;
+        }
+
+        @keyframes fadeIn { to { opacity: 1; } }
+        @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <div class="brand-icon">⚖️</div>
+                <div>
+                    <h1 style="margin:0; color:var(--gold);">DevCourt Production</h1>
+                    <small style="color:#666; letter-spacing: 1px;">AI GOVERNANCE SIMULATOR</small>
+                </div>
+            </div>
+            <div class="flex gap-2">
+                <button class="btn" onclick="loadExample('safe')">Load Safe Code</button>
+                <button class="btn" onclick="loadExample('vuln')">Load Vulnerable Code</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="flex flex-col gap-4">
+            
+            <div class="status-bar">
+                <div class="status-item active" id="st-kestra"><span class="status-dot dot-green"></span>Kestra</div>
+                <div class="status-item active" id="st-oumi"><span class="status-dot dot-green"></span>Oumi</div>
+                <div class="status-item active" id="st-together"><span class="status-dot dot-green"></span>TogetherAI</div>
+                <div class="status-item active" id="st-github"><span class="status-dot dot-green"></span>GitHub</div>
+                <div class="status-item active" id="st-vercel"><span class="status-dot dot-green"></span>Vercel</div>
+            </div>
+
+            <div class="editor-container">
+                <div class="editor-header">
+                    <span class="font-mono text-sm" style="color:#666">src/payment_processor.js</span>
+                    <span class="font-mono text-xs" style="color:var(--gold)">READY FOR ANALYSIS</span>
+                </div>
+                <textarea id="code-input" spellcheck="false">// Select an example or write code to analyze...</textarea>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress"></div>
+                </div>
+                <button class="btn-primary" id="run-btn" onclick="runPipeline()">
+                    🚀 INITIATE GOVERNANCE PIPELINE
+                </button>
+            </div>
+
+            <div id="verdict-card" class="verdict-overlay">
+                <div class="flex justify-between items-start">
+                    <div>
+                        <h2 id="verdict-title" style="margin:0; font-size:2.5rem; font-weight:bold;">GUILTY</h2>
+                        <p id="verdict-id" class="font-mono" style="color:#666; margin-top:5px;">ID: DC-EXEC-88291</p>
+                    </div>
+                    <div style="text-align:right;">
+                        <div id="verdict-score" class="font-mono" style="font-size:3rem; font-weight:bold;">35</div>
+                        <small style="color:#666; text-transform:uppercase;">Security Score</small>
+                    </div>
+                </div>
+                <hr style="border-color:#333; margin: 1rem 0;">
+                <div id="verdict-details" class="font-mono text-sm" style="line-height:1.6;"></div>
+                <div id="deploy-status" style="margin-top:1rem; font-weight:bold;"></div>
+            </div>
+        </div>
+
+        <div class="logs-panel">
+            <div class="logs-header">System Telemetry & Events</div>
+            <div class="logs-content" id="logs-area">
+                <div class="log-entry"><span class="log-time">System</span> <span class="log-msg">Ready. Services connected.</span></div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- Simulation Logic ---
+
+        const examples = {
+            safe: `const stripe = require('stripe')(process.env.STRIPE_KEY);
+
+async function processPayment(user, amount) {
+  if (!user.isValid) throw new Error('Invalid user');
+  
+  // Safe: Using parameterized API calls
+  try {
+    const charge = await stripe.charges.create({
+      amount: amount,
+      currency: 'usd',
+      source: 'tok_visa',
+      description: \`Charge for \${user.email}\`
+    });
+    console.log('Payment success');
+    return charge;
+  } catch (err) {
+    console.error('Payment failed:', err);
+    throw err;
+  }
+}`,
+            vuln: `const express = require('express');
+const app = express();
+const db = require('./db');
+
+// VULNERABILITY: SQL Injection
+app.get('/users', (req, res) => {
+  const query = "SELECT * FROM users WHERE id = " + req.query.id;
+  db.execute(query);
+});
+
+// VULNERABILITY: Hardcoded Secrets
+const AWS_KEY = "AKIAIOSFODNN7EXAMPLE";
+const AWS_SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
+
+// VULNERABILITY: XSS
+app.get('/echo', (req, res) => {
+  res.send("<h1>" + req.query.input + "</h1>");
+});`
+        };
+
+        function loadExample(type) {
+            document.getElementById('code-input').value = examples[type];
+            // Reset UI
+            document.getElementById('verdict-card').style.display = 'none';
+            document.getElementById('progress').style.width = '0%';
+            addLog('System', `Loaded ${type} code example.`);
+        }
+
+        function addLog(service, message) {
+            const area = document.getElementById('logs-area');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const time = new Date().toLocaleTimeString().split(' ')[0];
+            const serviceClass = `service-${service.toLowerCase().replace(' ', '')}`;
+            
+            entry.innerHTML = `
+                <span class="log-time">[${time}]</span>
+                <span class="log-service ${serviceClass}">${service}</span>
+                <span class="log-msg">${message}</span>
+            `;
+            
+            area.prepend(entry); // Newest on top
+        }
+
+        async function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+        async function runPipeline() {
+            const code = document.getElementById('code-input').value;
+            if (code.length < 10) { alert("Please enter some code first."); return; }
+
+            // Reset
+            const btn = document.getElementById('run-btn');
+            const progress = document.getElementById('progress');
+            const verdictCard = document.getElementById('verdict-card');
+            
+            btn.disabled = true;
+            btn.innerText = "⏳ ORCHESTRATING PIPELINE...";
+            verdictCard.style.display = 'none';
+            progress.style.width = '0%';
+            
+            const isVuln = code.includes('SELECT * FROM') || code.includes('AWS_KEY');
+            
+            try {
+                // PHASE 1: KESTRA
+                addLog('Kestra', '🚀 Triggering Workflow: governance-scan-v2');
+                progress.style.width = '10%';
+                await wait(800);
+                addLog('Kestra', '... Polling execution ID: exec_88291');
+                await wait(800);
+                addLog('Kestra', '✅ Workflow Steps Initiated: Static Analysis, Secret Scan');
+                progress.style.width = '30%';
+
+                // PHASE 2: OUMI
+                addLog('Oumi', '🧠 Loading model: security-judge-7b-quantized');
+                await wait(1000);
+                if (isVuln) {
+                    addLog('Oumi', '⚠️ DETECTED: SQL Injection Pattern (Confidence: 0.98)');
+                    await wait(400);
+                    addLog('Oumi', '⚠️ DETECTED: Hardcoded AWS Credentials');
+                } else {
+                    addLog('Oumi', 'ℹ️ No critical patterns detected in AST.');
+                }
+                addLog('Oumi', '✅ Inference complete. Generating embeddings.');
+                progress.style.width = '55%';
+
+                // PHASE 3: TOGETHER AI
+                addLog('Together', '⚖️ Starting Adversarial Debate (Prosecutor vs Defense)');
+                await wait(600);
+                if (isVuln) {
+                    addLog('Together', '🔴 Prosecutor: "Code contains blatant CWE-89 violation."');
+                    await wait(600);
+                    addLog('Together', '🔵 Defense: "No viable defense for hardcoded secrets."');
+                } else {
+                    addLog('Together', '🔴 Prosecutor: "Code structure looks standard."');
+                    await wait(600);
+                    addLog('Together', '🔵 Defense: "Input validation is present. Motion to approve."');
+                }
+                addLog('Together', '✅ Verdict Reached.');
+                progress.style.width = '75%';
+
+                // PHASE 4: GITHUB
+                addLog('GitHub', '📝 Creating Audit PR on branch devcourt/trial-88291...');
+                await wait(800);
+                addLog('GitHub', '✅ PR #402 Created. Triggering CodeRabbit.');
+                progress.style.width = '90%';
+
+                // PHASE 5: VERCEL
+                addLog('Vercel', 'Checking deployment gate status...');
+                await wait(800);
+                
+                // FINALIZE
+                progress.style.width = '100%';
+                btn.innerText = "🚀 INITIATE GOVERNANCE PIPELINE";
+                btn.disabled = false;
+
+                showVerdict(isVuln);
+
+            } catch (e) {
+                console.error(e);
+                btn.disabled = false;
+            }
+        }
+
+        function showVerdict(isGuilty) {
+            const card = document.getElementById('verdict-card');
+            const title = document.getElementById('verdict-title');
+            const score = document.getElementById('verdict-score');
+            const details = document.getElementById('verdict-details');
+            const deploy = document.getElementById('deploy-status');
+
+            card.style.display = 'block';
+            card.className = `verdict-overlay ${isGuilty ? 'verdict-guilty' : 'verdict-innocent'}`;
+            
+            title.innerText = isGuilty ? 'GUILTY' : 'INNOCENT';
+            title.style.color = isGuilty ? 'var(--red)' : 'var(--green)';
+            
+            score.innerText = isGuilty ? '35' : '92';
+            score.style.color = isGuilty ? 'var(--red)' : 'var(--green)';
+
+            if (isGuilty) {
+                details.innerHTML = `
+                    <div style="color:#ff6b6b">• CRITICAL: SQL Injection found on line 6</div>
+                    <div style="color:#ff6b6b">• HIGH: Hardcoded AWS Secrets detected</div>
+                    <div style="color:#ccc">• RECOMMENDATION: Use parameterized queries and env vars.</div>
+                `;
+                deploy.innerHTML = `<span style="color:var(--red)">🚫 VERCEL DEPLOYMENT BLOCKED</span>`;
+                addLog('Vercel', '🚫 Deployment Cancelled: Security Policy Violation');
+            } else {
+                details.innerHTML = `
+                    <div style="color:#4ade80">• No critical vulnerabilities found.</div>
+                    <div style="color:#ccc">• Compliance: OWASP Top 10 Passed.</div>
+                `;
+                deploy.innerHTML = `<span style="color:var(--green)">✅ DEPLOYING TO PRODUCTION...</span>`;
+                addLog('Vercel', '✅ Deployment Starting: https://devcourt-app.vercel.app');
+            }
+        }
+    </script>
+</body>
+</html>
